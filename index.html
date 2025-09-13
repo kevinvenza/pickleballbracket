@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pickleball Tournament Organizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 min-h-screen flex flex-col items-center">
+
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-5xl w-full">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Pickleball Tournament Organizer 🥒</h1>
+
+        <div id="team-entry-section" class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">1. Enter Teams</h2>
+            <p class="text-gray-600 mb-4">Enter 8 to 10 team names, one per line. The bracket will adjust automatically.</p>
+            <textarea id="team-names" rows="8" class="w-full p-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-indigo-500 transition-colors"></textarea>
+            
+            <div class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Pool Splitting Method</h3>
+                <div class="flex items-center space-x-4 bg-gray-50 p-3 rounded-lg">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="radio" name="pool-split-method" value="random" class="form-radio h-5 w-5 text-indigo-600" checked>
+                        <span class="ml-2 text-gray-700">Randomize Pools</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="radio" name="pool-split-method" value="ordered" class="form-radio h-5 w-5 text-indigo-600">
+                        <span class="ml-2 text-gray-700">Split by Entry Order</span>
+                    </label>
+                </div>
+            </div>
+
+            <button onclick="generatePools()" class="mt-4 w-full bg-indigo-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-indigo-700 transition-all transform hover:scale-105">
+                Generate Tournament
+            </button>
+        </div>
+
+        <div id="pool-play-section" class="hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">2. Pool Play (Round Robin)</h2>
+            <div id="pools-container" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div id="pool-1" class="bg-gray-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-4 text-center">Pool 1</h3>
+                    <div id="pool-1-matches"></div>
+                    <table class="w-full mt-6 text-sm md:text-base">
+                        <thead>
+                            <tr class="bg-indigo-100 text-indigo-800 rounded-t-lg">
+                                <th class="p-2 text-left rounded-tl-lg">Team</th>
+                                <th class="p-2 text-center">W</th>
+                                <th class="p-2 text-center">L</th>
+                                <th class="p-2 text-center rounded-tr-lg">Diff</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pool-1-standings"></tbody>
+                    </table>
+                </div>
+                <div id="pool-2" class="bg-gray-50 p-4 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-4 text-center">Pool 2</h3>
+                    <div id="pool-2-matches"></div>
+                    <table class="w-full mt-6 text-sm md:text-base">
+                        <thead>
+                            <tr class="bg-indigo-100 text-indigo-800 rounded-t-lg">
+                                <th class="p-2 text-left rounded-tl-lg">Team</th>
+                                <th class="p-2 text-center">W</th>
+                                <th class="p-2 text-center">L</th>
+                                <th class="p-2 text-center rounded-tr-lg">Diff</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pool-2-standings"></tbody>
+                    </table>
+                </div>
+            </div>
+            <button onclick="generateBracket()" class="mt-8 w-full bg-indigo-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-indigo-700 transition-all transform hover:scale-105">
+                Continue to Bracket →
+            </button>
+        </div>
+
+        <div id="bracket-section" class="hidden mt-8">
+            <button onclick="showPoolPlay()" class="w-full bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600 transition-colors mb-4">
+                ← Back to Pool Play
+            </button>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">3. Tournament Bracket</h2>
+            <div id="bracket-container" class="flex flex-col md:flex-row gap-8 overflow-x-auto">
+                <div id="winners-bracket" class="flex-1 bg-white p-4 rounded-lg shadow-md min-w-[300px]">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 text-center">Winners' Bracket</h3>
+                </div>
+                <div id="losers-bracket" class="flex-1 bg-white p-4 rounded-lg shadow-md min-w-[300px]">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 text-center">Losers' Bracket</h3>
+                </div>
+            </div>
+            <div id="finals-section" class="hidden mt-8">
+                <h3 class="text-xl font-bold text-gray-700 mb-4 text-center">Grand Final</h3>
+                <div id="finals-match"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let teams = [];
+        let pools = { 'Pool 1': [], 'Pool 2': [] };
+        let standings = {};
+        let matches = {};
+        let bracketState = {
+            winnersRounds: [],
+            losersRounds: []
+        };
+        let bracketTemplate = {};
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function generatePools() {
+            const teamNamesInput = document.getElementById('team-names').value;
+            teams = teamNamesInput.split('\n').map(name => name.trim()).filter(name => name);
+            if (teams.length < 8) {
+                return showModal("Please enter at least 8 teams.");
+            }
+            if (teams.length > 10) {
+                teams = teams.slice(0, 10);
+                showModal("This bracket is designed for a maximum of 10 teams. The first 10 teams have been used.");
+            } else if (teams.length === 9) {
+                teams.push('BYE');
+            } else if (teams.length === 8) {
+                teams.push('BYE', 'BYE');
+            }
+            
+            // --- Updated: Choose pool split method ---
+            const splitMethod = document.querySelector('input[name="pool-split-method"]:checked').value;
+            if (splitMethod === 'random') {
+                shuffleArray(teams);
+            }
+            // If 'ordered', we just proceed without shuffling.
+
+            pools['Pool 1'] = teams.slice(0, Math.ceil(teams.length / 2));
+            pools['Pool 2'] = teams.slice(Math.ceil(teams.length / 2));
+            bracketState = { winnersRounds: [], losersRounds: [] };
+            bracketTemplate = {};
+
+            document.getElementById('pool-play-section').classList.remove('hidden');
+            document.getElementById('bracket-section').classList.add('hidden');
+            document.getElementById('team-entry-section').classList.add('hidden');
+            document.getElementById('finals-section').classList.add('hidden');
+            renderPools();
+        }
+
+        function showPoolPlay() {
+            document.getElementById('bracket-section').classList.add('hidden');
+            document.getElementById('pool-play-section').classList.remove('hidden');
+        }
+
+        function renderPools() {
+            ['1', '2'].forEach(poolNum => {
+                const matchesDiv = document.getElementById(`pool-${poolNum}-matches`);
+                matchesDiv.innerHTML = '';
+                pools[`Pool ${poolNum}`].forEach((team1, i) => {
+                    for (let j = i + 1; j < pools[`Pool ${poolNum}`].length; j++) {
+                        const team2 = pools[`Pool ${poolNum}`][j];
+                        if (team1 === 'BYE' || team2 === 'BYE') continue;
+
+                        // --- Updated: Randomize home/away and create stable match ID ---
+                        const matchId = `pool-${[team1, team2].sort().join('-').replace(/\s/g, '')}`;
+                        let [displayTeam1, displayTeam2] = [team1, team2];
+                        if (Math.random() > 0.5) {
+                            [displayTeam1, displayTeam2] = [team2, team1]; // Swap for display
+                        }
+
+                        const matchDiv = document.createElement('div');
+                        matchDiv.className = 'bg-white p-3 rounded-lg shadow-sm mb-3 border';
+                        matchDiv.innerHTML = `
+                            <div class="flex items-center justify-between font-semibold text-gray-700">
+                                <span class="flex-1 text-left">${displayTeam1}</span><span class="px-2">vs.</span><span class="flex-1 text-right">${displayTeam2}</span>
+                            </div>
+                            <div class="flex items-center justify-center mt-2">
+                                <input type="number" data-team="${displayTeam1}" data-match="${matchId}" class="score-input w-16 text-center border rounded p-1 mr-2" placeholder="0" value="${matches[matchId]?.[displayTeam1] || ''}">
+                                <span>:</span>
+                                <input type="number" data-team="${displayTeam2}" data-match="${matchId}" class="score-input w-16 text-center border rounded p-1 ml-2" placeholder="0" value="${matches[matchId]?.[displayTeam2] || ''}">
+                            </div>`;
+                        matchesDiv.appendChild(matchDiv);
+                    }
+                });
+            });
+            document.querySelectorAll('.score-input').forEach(input => input.addEventListener('input', updateStandings));
+            updateStandings();
+        }
+
+        function updateStandings() {
+            standings = {};
+            matches = {};
+            teams.forEach(team => { standings[team] = { wins: 0, losses: 0, pointDiff: 0 }; });
+            document.querySelectorAll('.score-input').forEach(input => {
+                if (!matches[input.dataset.match]) matches[input.dataset.match] = {};
+                matches[input.dataset.match][input.dataset.team] = parseInt(input.value) || 0;
+            });
+            for (const matchId in matches) {
+                const [team1, team2] = Object.keys(matches[matchId]);
+                if (!team2) continue;
+                const [score1, score2] = [matches[matchId][team1], matches[matchId][team2]];
+                if (score1 > score2) { standings[team1].wins++; standings[team2].losses++; }
+                else if (score2 > score1) { standings[team2].wins++; standings[team1].losses++; }
+                standings[team1].pointDiff += (score1 - score2);
+                standings[team2].pointDiff += (score2 - score1);
+            }
+            ['1', '2'].forEach(poolNum => {
+                const tableBody = document.getElementById(`pool-${poolNum}-standings`);
+                tableBody.innerHTML = '';
+                [...pools[`Pool ${poolNum}`]].sort((a, b) => {
+                    if (a === 'BYE') return 1; if (b === 'BYE') return -1;
+                    return (standings[b].wins - standings[a].wins) || (standings[b].pointDiff - standings[a].pointDiff);
+                }).forEach((team, index) => {
+                    const row = tableBody.insertRow();
+                    row.className = 'border-b hover:bg-gray-100';
+                    row.innerHTML = `<td class="p-2 font-bold">${index + 1}. ${team}</td><td class="p-2 text-center">${standings[team]?.wins ?? 0}</td><td class="p-2 text-center">${standings[team]?.losses ?? 0}</td><td class="p-2 text-center">${standings[team]?.pointDiff ?? 0}</td>`;
+                });
+            });
+        }
+
+        function generateBracket() {
+            if (Object.keys(bracketTemplate).length > 0) {
+                const confirmed = confirm("Re-generating the bracket will erase all existing bracket scores. Are you sure you want to continue?");
+                if (!confirmed) {
+                    document.getElementById('bracket-section').classList.remove('hidden');
+                    document.getElementById('pool-play-section').classList.add('hidden');
+                    return; 
+                }
+            }
+            
+            document.getElementById('bracket-section').classList.remove('hidden');
+            document.getElementById('pool-play-section').classList.add('hidden');
+            
+            const sortedTeams = [...teams].sort((a, b) => {
+                if (a === 'BYE') return 1; if (b === 'BYE') return -1;
+                return (standings[b].wins - standings[a].wins) || (standings[b].pointDiff - standings[a].pointDiff);
+            });
+            const seeds = {};
+            sortedTeams.forEach((team, i) => seeds[i + 1] = team);
+
+            const createMatch = (t1, t2, id) => ({ team1: t1, team2: t2, id: id, winner: null, loser: null, score1: '', score2: '' });
+
+            bracketState.winnersRounds = [
+                [createMatch(seeds[7], seeds[10], 'W1.1'), createMatch(seeds[8], seeds[9], 'W1.2')],
+                [createMatch(seeds[1], 'Winner of W1.2', 'W2.1'), createMatch(seeds[4], seeds[5], 'W2.2'), createMatch(seeds[3], seeds[6], 'W2.3'), createMatch(seeds[2], 'Winner of W1.1', 'W2.4')],
+                [createMatch('Winner of W2.1', 'Winner of W2.2', 'W3.1'), createMatch('Winner of W2.3', 'Winner of W2.4', 'W3.2')],
+                [createMatch('Winner of W3.1', 'Winner of W3.2', 'W4.1')]
+            ];
+            bracketState.losersRounds = [
+                [createMatch('Loser of W1.1', 'Loser of W2.2', 'L1.1'), createMatch('Loser of W1.2', 'Loser of W2.3', 'L1.2')],
+                [createMatch('Loser of W2.4', 'Winner of L1.1', 'L2.1'), createMatch('Loser of W2.1', 'Winner of L1.2', 'L2.2')],
+                [createMatch('Loser of W3.2', 'Winner of L2.1', 'L3.1'), createMatch('Loser of W3.1', 'Winner of L2.2', 'L3.2')],
+                [createMatch('Winner of L3.1', 'Winner of L3.2', 'L4.1')],
+                [createMatch('Loser of W4.1', 'Winner of L4.1', 'L5.1')]
+            ];
+            
+            bracketTemplate = JSON.parse(JSON.stringify(bracketState));
+            processAllScoresAndRepopulate();
+        }
+        
+        function processAllScoresAndRepopulate() {
+            ['winners', 'losers'].forEach(type => {
+                bracketState[`${type}Rounds`]?.forEach((round, rIndex) => {
+                    round.forEach((match, mIndex) => {
+                        const inputs = document.querySelectorAll(`input[data-match-id="${type}-${rIndex}-${mIndex}"]`);
+                        if(inputs.length > 0) {
+                            match.score1 = inputs[0].value;
+                            match.score2 = inputs[1].value;
+                        }
+                    });
+                });
+            });
+
+            const capturedScores = JSON.parse(JSON.stringify(bracketState));
+            bracketState = JSON.parse(JSON.stringify(bracketTemplate));
+
+            ['winners', 'losers'].forEach(type => {
+                bracketState[`${type}Rounds`].forEach((round, rIndex) => {
+                    round.forEach((match, mIndex) => {
+                        match.score1 = capturedScores[`${type}Rounds`][rIndex][mIndex].score1;
+                        match.score2 = capturedScores[`${type}Rounds`][rIndex][mIndex].score2;
+                    });
+                });
+            });
+
+            const findAndPopulate = (placeholder, team) => {
+                [...bracketState.winnersRounds, ...bracketState.losersRounds].flat().forEach(m => {
+                    if (m.team1 === placeholder) m.team1 = team;
+                    if (m.team2 === placeholder) m.team2 = team;
+                });
+            };
+
+            let changed;
+            do {
+                changed = false;
+                [...bracketState.winnersRounds, ...bracketState.losersRounds].flat().forEach(match => {
+                    if (match.winner) return;
+                    const isTBD = t => typeof t !== 'string' || t.toLowerCase().includes(' of ');
+                    if (isTBD(match.team1) || isTBD(match.team2)) return;
+
+                    let winner = null, loser = null;
+                    if (match.team1 === 'BYE') { [winner, loser] = [match.team2, match.team1]; }
+                    else if (match.team2 === 'BYE') { [winner, loser] = [match.team1, match.team2]; }
+                    else if (match.score1 !== '' && match.score2 !== '') {
+                        const score1 = parseInt(match.score1);
+                        const score2 = parseInt(match.score2);
+                        if (score1 > score2) { [winner, loser] = [match.team1, match.team2]; }
+                        else if (score2 > score1) { [winner, loser] = [match.team2, match.team1]; }
+                    }
+                    
+                    if(winner) {
+                        match.winner = winner;
+                        match.loser = loser;
+                        findAndPopulate(`Winner of ${match.id}`, winner);
+                        findAndPopulate(`Loser of ${match.id}`, loser);
+                        changed = true;
+                    }
+                });
+            } while (changed);
+            
+            renderAllBrackets();
+            checkFinals();
+        }
+
+        function renderAllBrackets() {
+            ['winners', 'losers'].forEach(type => {
+                const bracketDiv = document.getElementById(`${type}-bracket`);
+                bracketDiv.innerHTML = `<h3 class="text-xl font-bold text-gray-700 mb-4 text-center">${type.charAt(0).toUpperCase() + type.slice(1)}' Bracket</h3>`;
+                bracketState[`${type}Rounds`]?.forEach((round, roundIndex) => {
+                    const roundDiv = document.createElement('div');
+                    roundDiv.className = 'mt-4';
+                    roundDiv.innerHTML = `<p class="font-semibold mb-2">${type.charAt(0).toUpperCase() + type.slice(1)}' Round ${roundIndex + 1}</p>`;
+                    round.forEach((match, matchIndex) => roundDiv.appendChild(createMatchElement(match, type, roundIndex, matchIndex)));
+                    bracketDiv.appendChild(roundDiv);
+                    const isTBD = (t) => typeof t !== 'string' || t.toLowerCase().includes(' of ');
+                    if (round.some(m => !isTBD(m.team1) && !isTBD(m.team2) && m.team1 !== 'BYE' && m.team2 !== 'BYE')) {
+                        const btn = document.createElement('button');
+                        btn.className = `mt-4 w-full text-white font-bold py-2 rounded-lg shadow-md ${type === 'winners' ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-600 hover:bg-orange-700'}`;
+                        btn.textContent = `Update ${type.charAt(0).toUpperCase() + type.slice(1)}' Bracket`;
+                        btn.onclick = processAllScoresAndRepopulate;
+                        bracketDiv.appendChild(btn);
+                    }
+                });
+            });
+        }
+
+        function createMatchElement(match, bracketType, roundIndex, matchIndex) {
+            const matchDiv = document.createElement('div');
+            const isTBD = (t) => typeof t !== 'string' || t.toLowerCase().includes(' of ');
+
+            if (isTBD(match.team1) || isTBD(match.team2)) {
+                matchDiv.className = 'bg-gray-100 p-3 rounded-lg mb-3 border';
+                matchDiv.innerHTML = `<div class="flex items-center justify-between text-gray-500"><span>${match.team1 || 'TBD'}</span><span class="px-2">vs.</span><span>${match.team2 || 'TBD'}</span></div>`;
+            } else if (match.team1 === 'BYE' || match.team2 === 'BYE') {
+                matchDiv.className = 'bg-green-50 p-3 rounded-lg mb-3 border-green-300';
+                matchDiv.innerHTML = `<div class="flex items-center justify-between font-semibold"><span>${match.team1}</span><span class="px-2">vs.</span><span>${match.team2}</span></div>
+                                        <div class="mt-2 text-center text-green-700 font-bold">Winner: ${match.winner} (BYE)</div>`;
+            } else {
+                matchDiv.className = `p-3 rounded-lg mb-3 border ${match.winner ? 'bg-green-50 border-green-300' : 'bg-white'}`;
+                matchDiv.innerHTML = `
+                    <div class="flex items-center justify-between font-semibold text-gray-700"><span>${match.team1}</span><span class="px-2">vs.</span><span>${match.team2}</span></div>
+                    <div class="flex items-center justify-center mt-2">
+                        <input type="number" data-match-id="${bracketType}-${roundIndex}-${matchIndex}" value="${match.score1}" class="bracket-score-input w-16 text-center border rounded p-1 mr-2" placeholder="0">
+                        <span>:</span>
+                        <input type="number" data-match-id="${bracketType}-${roundIndex}-${matchIndex}" value="${match.score2}" class="bracket-score-input w-16 text-center border rounded p-1 ml-2" placeholder="0">
+                    </div>
+                    ${match.winner ? `<div class="mt-2 text-center text-green-700 font-bold">Current Winner: ${match.winner}</div>` : ''}`;
+            }
+            return matchDiv;
+        }
+        
+        function checkFinals() {
+            const wbChamp = bracketState.winnersRounds.flat().find(m => m.id === 'W4.1')?.winner;
+            const lbChamp = bracketState.losersRounds.flat().find(m => m.id === 'L5.1')?.winner;
+
+            if (wbChamp && lbChamp) {
+                document.getElementById('finals-section').classList.remove('hidden');
+                const finalsMatchDiv = document.getElementById('finals-match');
+                const finalsMatch = { team1: wbChamp, team2: lbChamp, score1: '', score2: '' };
+                finalsMatchDiv.innerHTML = '';
+                finalsMatchDiv.appendChild(createMatchElement(finalsMatch, 'finals', 0, 0));
+                const btn = document.createElement('button');
+                btn.className = 'mt-4 w-full bg-red-600 text-white font-bold py-2 rounded-lg shadow-md hover:bg-red-700';
+                btn.textContent = 'Decide Champion';
+                btn.onclick = () => {
+                    const inputs = finalsMatchDiv.querySelectorAll('input');
+                    const score1 = parseInt(inputs[0].value);
+                    const score2 = parseInt(inputs[1].value);
+                    if (isNaN(score1) || isNaN(score2)) return showModal("Please enter scores for the final match.");
+                    if (score1 === score2) return showModal("Final match cannot end in a tie.");
+                    const winner = score1 > score2 ? finalsMatch.team1 : finalsMatch.team2;
+                    finalsMatchDiv.innerHTML = `<div class="mt-8 text-center text-4xl font-bold text-yellow-500">🏆 Tournament Champion: ${winner} 🏆</div>`;
+                };
+                finalsMatchDiv.appendChild(btn);
+            } else {
+                 document.getElementById('finals-section').classList.add('hidden');
+            }
+        }
+
+        function showModal(message) {
+            let modal = document.getElementById('custom-modal');
+            if (modal) modal.remove();
+            modal = document.createElement('div');
+            modal.id = 'custom-modal';
+            modal.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
+                    <p class="text-lg font-semibold mb-4">${message}</p>
+                    <button onclick="document.getElementById('custom-modal').remove()" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700">OK</button>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+
+        window.onload = function() {
+            document.getElementById('team-names').value = `Team Alpha\nTeam Bravo\nTeam Charlie\nTeam Delta\nTeam Echo\nTeam Foxtrot\nTeam Golf\nTeam Hotel\nTeam India\nTeam Juliet`;
+        }
+    </script>
+</body>
+</html>
