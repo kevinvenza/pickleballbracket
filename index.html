@@ -10,11 +10,47 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
+        /* New: Print Styles */
+        @media print {
+            body {
+                background-color: #fff;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .bg-white.rounded-xl {
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+            #bracket-container {
+                flex-direction: row; /* Ensure bracket layout is horizontal */
+            }
+            .bg-gray-50 {
+                background-color: #f9fafb;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-4 min-h-screen flex flex-col items-center">
 
-    <div class="bg-white rounded-xl shadow-lg p-6 max-w-5xl w-full">
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-5xl w-full relative">
+        <div id="main-controls" class="hidden absolute top-4 right-4 no-print">
+            <div class="relative">
+                <button id="menu-toggle" class="bg-gray-200 hover:bg-gray-300 text-gray-800 p-2 rounded-full h-10 w-10 flex items-center justify-center transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" />
+                    </svg>
+                </button>
+                <div id="menu-dropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-xl z-20 py-1">
+                    <a href="javascript:void(0)" onclick="exportResults()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">📋 Export Results</a>
+                    <a href="javascript:void(0)" onclick="downloadBracketSVG()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🖼️ Download Bracket (SVG)</a>
+                    <a href="javascript:void(0)" onclick="window.print()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🖨️ Print Tournament</a>
+                    <div class="border-t border-gray-100 my-1"></div>
+                    <a href="javascript:void(0)" onclick="resetTournament()" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">🗑️ Start New Tournament</a>
+                </div>
+            </div>
+        </div>
+
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Pickleball Tournament Organizer 🥒</h1>
 
         <div id="team-entry-section" class="mb-8">
@@ -36,7 +72,7 @@
                 </div>
             </div>
 
-            <button onclick="generatePools()" class="mt-4 w-full bg-indigo-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-indigo-700 transition-all transform hover:scale-105">
+            <button onclick="generatePools()" class="mt-4 w-full bg-indigo-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-indigo-700 transition-all transform hover:scale-105 no-print">
                 Generate Tournament
             </button>
         </div>
@@ -44,73 +80,159 @@
         <div id="pool-play-section" class="hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">2. Pool Play (Round Robin)</h2>
             <div id="pools-container" class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div id="pool-1" class="bg-gray-50 p-4 rounded-lg shadow-inner">
-                    <h3 class="text-xl font-bold text-indigo-800 mb-4 text-center">Pool 1</h3>
-                    <div id="pool-1-matches"></div>
-                    <table class="w-full mt-6 text-sm md:text-base">
-                        <thead>
-                            <tr class="bg-indigo-100 text-indigo-800 rounded-t-lg">
-                                <th class="p-2 text-left rounded-tl-lg">Team</th>
-                                <th class="p-2 text-center">W</th>
-                                <th class="p-2 text-center">L</th>
-                                <th class="p-2 text-center rounded-tr-lg">Diff</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pool-1-standings"></tbody>
-                    </table>
-                </div>
-                <div id="pool-2" class="bg-gray-50 p-4 rounded-lg shadow-inner">
-                    <h3 class="text-xl font-bold text-indigo-800 mb-4 text-center">Pool 2</h3>
-                    <div id="pool-2-matches"></div>
-                    <table class="w-full mt-6 text-sm md:text-base">
-                        <thead>
-                            <tr class="bg-indigo-100 text-indigo-800 rounded-t-lg">
-                                <th class="p-2 text-left rounded-tl-lg">Team</th>
-                                <th class="p-2 text-center">W</th>
-                                <th class="p-2 text-center">L</th>
-                                <th class="p-2 text-center rounded-tr-lg">Diff</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pool-2-standings"></tbody>
-                    </table>
-                </div>
+                <div id="pool-1" class="bg-gray-50 p-4 rounded-lg shadow-inner"></div>
+                <div id="pool-2" class="bg-gray-50 p-4 rounded-lg shadow-inner"></div>
             </div>
-            <button onclick="generateBracket()" class="mt-8 w-full bg-indigo-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-indigo-700 transition-all transform hover:scale-105">
+            <button onclick="generateBracket()" class="mt-8 w-full bg-indigo-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-indigo-700 transition-all transform hover:scale-105 no-print">
                 Continue to Bracket →
             </button>
         </div>
 
         <div id="bracket-section" class="hidden mt-8">
-            <button onclick="showPoolPlay()" class="w-full bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600 transition-colors mb-4">
+            <button onclick="showPoolPlay()" class="w-full bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600 transition-colors mb-4 no-print">
                 ← Back to Pool Play
             </button>
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">3. Tournament Bracket</h2>
             <div id="bracket-container" class="flex flex-col md:flex-row gap-8 overflow-x-auto">
-                <div id="winners-bracket" class="flex-1 bg-white p-4 rounded-lg shadow-md min-w-[300px]">
-                    <h3 class="text-xl font-bold text-gray-700 mb-4 text-center">Winners' Bracket</h3>
-                </div>
-                <div id="losers-bracket" class="flex-1 bg-white p-4 rounded-lg shadow-md min-w-[300px]">
-                    <h3 class="text-xl font-bold text-gray-700 mb-4 text-center">Losers' Bracket</h3>
-                </div>
+                <div id="winners-bracket"></div>
+                <div id="losers-bracket"></div>
             </div>
             <div id="finals-section" class="hidden mt-8">
-                <h3 class="text-xl font-bold text-gray-700 mb-4 text-center">Grand Final</h3>
-                <div id="finals-match"></div>
-            </div>
+                </div>
         </div>
     </div>
 
     <script>
         // Global variables
-        let teams = [];
-        let pools = { 'Pool 1': [], 'Pool 2': [] };
-        let standings = {};
-        let matches = {};
-        let bracketState = {
-            winnersRounds: [],
-            losersRounds: []
-        };
-        let bracketTemplate = {};
+        let teams = [], pools = { 'Pool 1': [], 'Pool 2': [] }, standings = {}, matches = {}, bracketState = { winnersRounds: [], losersRounds: [] }, bracketTemplate = {};
+
+        // --- NEW: Export and Print Functionality ---
+        function exportResults() {
+            const resultsText = generateResultsText();
+            const modalContent = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-2xl w-full text-left">
+                    <h3 class="text-2xl font-bold mb-4">Tournament Results</h3>
+                    <textarea readonly class="w-full h-64 p-2 border rounded-lg bg-gray-50 font-mono text-sm">${resultsText}</textarea>
+                    <div class="flex justify-end space-x-2 mt-4">
+                        <button onclick="copyToClipboard(this.parentElement.previousElementSibling.value)" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700">Copy to Clipboard</button>
+                        <button onclick="downloadAsTxt()" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Save as .txt</button>
+                        <button onclick="document.getElementById('custom-modal').remove()" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600">Close</button>
+                    </div>
+                </div>`;
+            showModal(modalContent, true);
+        }
+
+        function generateResultsText() {
+            let text = '🏆 Pickleball Tournament Results 🏆\n';
+            text += '====================================\n\n';
+
+            text += '--- POOL PLAY STANDINGS ---\n';
+            ['1', '2'].forEach(poolNum => {
+                text += `\nPool ${poolNum}:\n`;
+                const sortedPoolTeams = [...pools[`Pool ${poolNum}`]].sort((a, b) => {
+                    if (a === 'BYE') return 1; if (b === 'BYE') return -1;
+                    return (standings[b].wins - standings[a].wins) || (standings[b].pointDiff - standings[a].pointDiff);
+                });
+                sortedPoolTeams.forEach((team, index) => {
+                    if (team === 'BYE') return;
+                    const s = standings[team];
+                    text += `${index + 1}. ${team} (W-L: ${s.wins}-${s.losses}, Diff: ${s.pointDiff})\n`;
+                });
+            });
+
+            text += '\n\n--- TOURNAMENT BRACKET ---\n';
+            const allRounds = [...bracketState.winnersRounds, ...bracketState.losersRounds].flat();
+            allRounds.forEach(match => {
+                if (match.winner && match.team1 !== 'BYE' && match.team2 !== 'BYE') {
+                    text += `\n[${match.id}] ${match.winner} def. ${match.loser} (${match.score1 > match.score2 ? match.score1 + '-' + match.score2 : match.score2 + '-' + match.score1})`;
+                }
+            });
+
+            const wbChamp = bracketState.winnersRounds.flat().find(m => m.id === 'W4.1')?.winner;
+            const lbChamp = bracketState.losersRounds.flat().find(m => m.id === 'L5.1')?.winner;
+            if(wbChamp && lbChamp) {
+                const finalWinner = document.querySelector('.champion-name');
+                if (finalWinner) {
+                    text += `\n\n--- GRAND FINAL ---\nCHAMPION: ${finalWinner.textContent}`;
+                }
+            }
+            return text;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Results copied to clipboard!');
+            }, (err) => {
+                alert('Failed to copy results.');
+            });
+        }
+        
+        function downloadAsTxt() {
+            const text = generateResultsText();
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', 'tournament_results.txt');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        // --- Save/Load/Reset Functionality ---
+        function saveState() {
+            const state = {
+                teams, pools, matches, bracketState, bracketTemplate, currentView: getCurrentView()
+            };
+            localStorage.setItem('pickleballTournament', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const savedState = localStorage.getItem('pickleballTournament');
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                teams = state.teams || [];
+                pools = state.pools || { 'Pool 1': [], 'Pool 2': [] };
+                matches = state.matches || {};
+                bracketState = state.bracketState || { winnersRounds: [], losersRounds: [] };
+                bracketTemplate = state.bracketTemplate || {};
+
+                if (state.currentView === 'team-entry' || teams.length < 8) return;
+
+                document.getElementById('team-entry-section').classList.add('hidden');
+                document.getElementById('main-controls').classList.remove('hidden');
+
+                if (state.currentView === 'pool-play') {
+                    document.getElementById('pool-play-section').classList.remove('hidden');
+                    renderPools();
+                } else if (state.currentView === 'bracket') {
+                    document.getElementById('bracket-section').classList.remove('hidden');
+                    processAllScoresAndRepopulate();
+                }
+            }
+        }
+        
+        function resetTournament() {
+            if (confirm("Are you sure? All saved progress will be deleted.")) {
+                localStorage.removeItem('pickleballTournament');
+                window.location.reload();
+            }
+        }
+
+        function getCurrentView() {
+            if (!document.getElementById('bracket-section').classList.contains('hidden')) return 'bracket';
+            if (!document.getElementById('pool-play-section').classList.contains('hidden')) return 'pool-play';
+            return 'team-entry';
+        }
+
+        window.onload = function() {
+            loadState();
+            if (teams.length === 0) {
+                document.getElementById('team-names').value = `Team Alpha\nTeam Bravo\nTeam Charlie\nTeam Delta\nTeam Echo\nTeam Foxtrot\nTeam Golf\nTeam Hotel\nTeam India\nTeam Juliet`;
+            }
+        }
+        // Other functions (generatePools, renderPools, etc.) follow...
+        // The rest of the JS is largely the same, with minor tweaks to call saveState()
+        // and show the main controls. Full JS included for completeness.
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -122,24 +244,15 @@
         function generatePools() {
             const teamNamesInput = document.getElementById('team-names').value;
             teams = teamNamesInput.split('\n').map(name => name.trim()).filter(name => name);
-            if (teams.length < 8) {
-                return showModal("Please enter at least 8 teams.");
-            }
+            if (teams.length < 8) return showModal("Please enter at least 8 teams.");
             if (teams.length > 10) {
                 teams = teams.slice(0, 10);
-                showModal("This bracket is designed for a maximum of 10 teams. The first 10 teams have been used.");
-            } else if (teams.length === 9) {
-                teams.push('BYE');
-            } else if (teams.length === 8) {
-                teams.push('BYE', 'BYE');
-            }
+                showModal("Max 10 teams. The first 10 have been used.");
+            } else if (teams.length === 9) teams.push('BYE');
+            else if (teams.length === 8) teams.push('BYE', 'BYE');
             
-            // --- Updated: Choose pool split method ---
             const splitMethod = document.querySelector('input[name="pool-split-method"]:checked').value;
-            if (splitMethod === 'random') {
-                shuffleArray(teams);
-            }
-            // If 'ordered', we just proceed without shuffling.
+            if (splitMethod === 'random') shuffleArray(teams);
 
             pools['Pool 1'] = teams.slice(0, Math.ceil(teams.length / 2));
             pools['Pool 2'] = teams.slice(Math.ceil(teams.length / 2));
@@ -147,44 +260,45 @@
             bracketTemplate = {};
 
             document.getElementById('pool-play-section').classList.remove('hidden');
-            document.getElementById('bracket-section').classList.add('hidden');
             document.getElementById('team-entry-section').classList.add('hidden');
-            document.getElementById('finals-section').classList.add('hidden');
+            document.getElementById('main-controls').classList.remove('hidden');
+            
             renderPools();
+            saveState();
         }
 
         function showPoolPlay() {
             document.getElementById('bracket-section').classList.add('hidden');
             document.getElementById('pool-play-section').classList.remove('hidden');
+            saveState();
         }
 
         function renderPools() {
             ['1', '2'].forEach(poolNum => {
+                const poolDiv = document.getElementById(`pool-${poolNum}`);
+                poolDiv.innerHTML = `<h3 class="text-xl font-bold text-indigo-800 mb-4 text-center">Pool ${poolNum}</h3><div id="pool-${poolNum}-matches"></div>
+                <table class="w-full mt-6 text-sm md:text-base"><thead><tr class="bg-indigo-100 text-indigo-800 rounded-t-lg">
+                <th class="p-2 text-left rounded-tl-lg">Team</th><th class="p-2 text-center">W</th><th class="p-2 text-center">L</th><th class="p-2 text-center rounded-tr-lg">Diff</th>
+                </tr></thead><tbody id="pool-${poolNum}-standings"></tbody></table>`;
+                
                 const matchesDiv = document.getElementById(`pool-${poolNum}-matches`);
-                matchesDiv.innerHTML = '';
                 pools[`Pool ${poolNum}`].forEach((team1, i) => {
                     for (let j = i + 1; j < pools[`Pool ${poolNum}`].length; j++) {
                         const team2 = pools[`Pool ${poolNum}`][j];
                         if (team1 === 'BYE' || team2 === 'BYE') continue;
 
-                        // --- Updated: Randomize home/away and create stable match ID ---
                         const matchId = `pool-${[team1, team2].sort().join('-').replace(/\s/g, '')}`;
                         let [displayTeam1, displayTeam2] = [team1, team2];
-                        if (Math.random() > 0.5) {
-                            [displayTeam1, displayTeam2] = [team2, team1]; // Swap for display
-                        }
+                        if (Math.random() > 0.5) [displayTeam1, displayTeam2] = [team2, team1];
 
                         const matchDiv = document.createElement('div');
                         matchDiv.className = 'bg-white p-3 rounded-lg shadow-sm mb-3 border';
-                        matchDiv.innerHTML = `
-                            <div class="flex items-center justify-between font-semibold text-gray-700">
-                                <span class="flex-1 text-left">${displayTeam1}</span><span class="px-2">vs.</span><span class="flex-1 text-right">${displayTeam2}</span>
-                            </div>
-                            <div class="flex items-center justify-center mt-2">
-                                <input type="number" data-team="${displayTeam1}" data-match="${matchId}" class="score-input w-16 text-center border rounded p-1 mr-2" placeholder="0" value="${matches[matchId]?.[displayTeam1] || ''}">
-                                <span>:</span>
-                                <input type="number" data-team="${displayTeam2}" data-match="${matchId}" class="score-input w-16 text-center border rounded p-1 ml-2" placeholder="0" value="${matches[matchId]?.[displayTeam2] || ''}">
-                            </div>`;
+                        matchDiv.innerHTML = `<div class="flex items-center justify-between font-semibold text-gray-700">
+                                <span class="flex-1 text-left">${displayTeam1}</span><span class="px-2">vs.</span><span class="flex-1 text-right">${displayTeam2}</span></div>
+                                <div class="flex items-center justify-center mt-2">
+                                <input type="number" data-team="${displayTeam1}" data-match="${matchId}" class="score-input w-16 text-center border rounded p-1 mr-2 no-print" placeholder="0" value="${matches[matchId]?.[displayTeam1] || ''}">
+                                <span class="font-bold">:</span>
+                                <input type="number" data-team="${displayTeam2}" data-match="${matchId}" class="score-input w-16 text-center border rounded p-1 ml-2 no-print" placeholder="0" value="${matches[matchId]?.[displayTeam2] || ''}"></div>`;
                         matchesDiv.appendChild(matchDiv);
                     }
                 });
@@ -194,8 +308,7 @@
         }
 
         function updateStandings() {
-            standings = {};
-            matches = {};
+            standings = {}; matches = {};
             teams.forEach(team => { standings[team] = { wins: 0, losses: 0, pointDiff: 0 }; });
             document.querySelectorAll('.score-input').forEach(input => {
                 if (!matches[input.dataset.match]) matches[input.dataset.match] = {};
@@ -222,30 +335,27 @@
                     row.innerHTML = `<td class="p-2 font-bold">${index + 1}. ${team}</td><td class="p-2 text-center">${standings[team]?.wins ?? 0}</td><td class="p-2 text-center">${standings[team]?.losses ?? 0}</td><td class="p-2 text-center">${standings[team]?.pointDiff ?? 0}</td>`;
                 });
             });
+            saveState();
         }
 
         function generateBracket() {
             if (Object.keys(bracketTemplate).length > 0) {
-                const confirmed = confirm("Re-generating the bracket will erase all existing bracket scores. Are you sure you want to continue?");
-                if (!confirmed) {
+                if (!confirm("Re-generating will erase bracket scores. Continue?")) {
                     document.getElementById('bracket-section').classList.remove('hidden');
                     document.getElementById('pool-play-section').classList.add('hidden');
+                    saveState();
                     return; 
                 }
             }
-            
             document.getElementById('bracket-section').classList.remove('hidden');
             document.getElementById('pool-play-section').classList.add('hidden');
-            
             const sortedTeams = [...teams].sort((a, b) => {
                 if (a === 'BYE') return 1; if (b === 'BYE') return -1;
                 return (standings[b].wins - standings[a].wins) || (standings[b].pointDiff - standings[a].pointDiff);
             });
             const seeds = {};
             sortedTeams.forEach((team, i) => seeds[i + 1] = team);
-
-            const createMatch = (t1, t2, id) => ({ team1: t1, team2: t2, id: id, winner: null, loser: null, score1: '', score2: '' });
-
+            const createMatch = (t1, t2, id) => ({ team1: t1, team2: t2, id, winner: null, loser: null, score1: '', score2: '' });
             bracketState.winnersRounds = [
                 [createMatch(seeds[7], seeds[10], 'W1.1'), createMatch(seeds[8], seeds[9], 'W1.2')],
                 [createMatch(seeds[1], 'Winner of W1.2', 'W2.1'), createMatch(seeds[4], seeds[5], 'W2.2'), createMatch(seeds[3], seeds[6], 'W2.3'), createMatch(seeds[2], 'Winner of W1.1', 'W2.4')],
@@ -259,7 +369,6 @@
                 [createMatch('Winner of L3.1', 'Winner of L3.2', 'L4.1')],
                 [createMatch('Loser of W4.1', 'Winner of L4.1', 'L5.1')]
             ];
-            
             bracketTemplate = JSON.parse(JSON.stringify(bracketState));
             processAllScoresAndRepopulate();
         }
@@ -276,10 +385,8 @@
                     });
                 });
             });
-
             const capturedScores = JSON.parse(JSON.stringify(bracketState));
             bracketState = JSON.parse(JSON.stringify(bracketTemplate));
-
             ['winners', 'losers'].forEach(type => {
                 bracketState[`${type}Rounds`].forEach((round, rIndex) => {
                     round.forEach((match, mIndex) => {
@@ -288,14 +395,12 @@
                     });
                 });
             });
-
             const findAndPopulate = (placeholder, team) => {
                 [...bracketState.winnersRounds, ...bracketState.losersRounds].flat().forEach(m => {
                     if (m.team1 === placeholder) m.team1 = team;
                     if (m.team2 === placeholder) m.team2 = team;
                 });
             };
-
             let changed;
             do {
                 changed = false;
@@ -303,48 +408,47 @@
                     if (match.winner) return;
                     const isTBD = t => typeof t !== 'string' || t.toLowerCase().includes(' of ');
                     if (isTBD(match.team1) || isTBD(match.team2)) return;
-
                     let winner = null, loser = null;
                     if (match.team1 === 'BYE') { [winner, loser] = [match.team2, match.team1]; }
                     else if (match.team2 === 'BYE') { [winner, loser] = [match.team1, match.team2]; }
                     else if (match.score1 !== '' && match.score2 !== '') {
-                        const score1 = parseInt(match.score1);
-                        const score2 = parseInt(match.score2);
-                        if (score1 > score2) { [winner, loser] = [match.team1, match.team2]; }
-                        else if (score2 > score1) { [winner, loser] = [match.team2, match.team1]; }
+                        const s1 = parseInt(match.score1), s2 = parseInt(match.score2);
+                        if (!isNaN(s1) && !isNaN(s2)) {
+                            if (s1 > s2) { [winner, loser] = [match.team1, match.team2]; }
+                            else if (s2 > s1) { [winner, loser] = [match.team2, match.team1]; }
+                        }
                     }
-                    
                     if(winner) {
-                        match.winner = winner;
-                        match.loser = loser;
+                        match.winner = winner; match.loser = loser;
                         findAndPopulate(`Winner of ${match.id}`, winner);
                         findAndPopulate(`Loser of ${match.id}`, loser);
                         changed = true;
                     }
                 });
             } while (changed);
-            
             renderAllBrackets();
             checkFinals();
+            saveState();
         }
 
         function renderAllBrackets() {
             ['winners', 'losers'].forEach(type => {
                 const bracketDiv = document.getElementById(`${type}-bracket`);
-                bracketDiv.innerHTML = `<h3 class="text-xl font-bold text-gray-700 mb-4 text-center">${type.charAt(0).toUpperCase() + type.slice(1)}' Bracket</h3>`;
+                bracketDiv.innerHTML = `<div class="flex-1 bg-white p-4 rounded-lg shadow-md min-w-[300px]"><h3 class="text-xl font-bold text-gray-700 mb-4 text-center">${type.charAt(0).toUpperCase() + type.slice(1)}' Bracket</h3></div>`;
+                const container = bracketDiv.firstElementChild;
                 bracketState[`${type}Rounds`]?.forEach((round, roundIndex) => {
                     const roundDiv = document.createElement('div');
                     roundDiv.className = 'mt-4';
                     roundDiv.innerHTML = `<p class="font-semibold mb-2">${type.charAt(0).toUpperCase() + type.slice(1)}' Round ${roundIndex + 1}</p>`;
                     round.forEach((match, matchIndex) => roundDiv.appendChild(createMatchElement(match, type, roundIndex, matchIndex)));
-                    bracketDiv.appendChild(roundDiv);
-                    const isTBD = (t) => typeof t !== 'string' || t.toLowerCase().includes(' of ');
+                    container.appendChild(roundDiv);
+                    const isTBD = t => typeof t !== 'string' || t.toLowerCase().includes(' of ');
                     if (round.some(m => !isTBD(m.team1) && !isTBD(m.team2) && m.team1 !== 'BYE' && m.team2 !== 'BYE')) {
                         const btn = document.createElement('button');
-                        btn.className = `mt-4 w-full text-white font-bold py-2 rounded-lg shadow-md ${type === 'winners' ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-600 hover:bg-orange-700'}`;
+                        btn.className = `mt-4 w-full text-white font-bold py-2 rounded-lg shadow-md no-print ${type === 'winners' ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-600 hover:bg-orange-700'}`;
                         btn.textContent = `Update ${type.charAt(0).toUpperCase() + type.slice(1)}' Bracket`;
                         btn.onclick = processAllScoresAndRepopulate;
-                        bracketDiv.appendChild(btn);
+                        container.appendChild(btn);
                     }
                 });
             });
@@ -352,74 +456,194 @@
 
         function createMatchElement(match, bracketType, roundIndex, matchIndex) {
             const matchDiv = document.createElement('div');
-            const isTBD = (t) => typeof t !== 'string' || t.toLowerCase().includes(' of ');
-
+            const isTBD = t => typeof t !== 'string' || t.toLowerCase().includes(' of ');
             if (isTBD(match.team1) || isTBD(match.team2)) {
                 matchDiv.className = 'bg-gray-100 p-3 rounded-lg mb-3 border';
                 matchDiv.innerHTML = `<div class="flex items-center justify-between text-gray-500"><span>${match.team1 || 'TBD'}</span><span class="px-2">vs.</span><span>${match.team2 || 'TBD'}</span></div>`;
             } else if (match.team1 === 'BYE' || match.team2 === 'BYE') {
                 matchDiv.className = 'bg-green-50 p-3 rounded-lg mb-3 border-green-300';
-                matchDiv.innerHTML = `<div class="flex items-center justify-between font-semibold"><span>${match.team1}</span><span class="px-2">vs.</span><span>${match.team2}</span></div>
-                                        <div class="mt-2 text-center text-green-700 font-bold">Winner: ${match.winner} (BYE)</div>`;
+                matchDiv.innerHTML = `<div class="flex items-center justify-between font-semibold"><span>${match.team1}</span><span class="px-2">vs.</span><span>${match.team2}</span></div><div class="mt-2 text-center text-green-700 font-bold">Winner: ${match.winner} (BYE)</div>`;
             } else {
                 matchDiv.className = `p-3 rounded-lg mb-3 border ${match.winner ? 'bg-green-50 border-green-300' : 'bg-white'}`;
-                matchDiv.innerHTML = `
-                    <div class="flex items-center justify-between font-semibold text-gray-700"><span>${match.team1}</span><span class="px-2">vs.</span><span>${match.team2}</span></div>
-                    <div class="flex items-center justify-center mt-2">
-                        <input type="number" data-match-id="${bracketType}-${roundIndex}-${matchIndex}" value="${match.score1}" class="bracket-score-input w-16 text-center border rounded p-1 mr-2" placeholder="0">
-                        <span>:</span>
-                        <input type="number" data-match-id="${bracketType}-${roundIndex}-${matchIndex}" value="${match.score2}" class="bracket-score-input w-16 text-center border rounded p-1 ml-2" placeholder="0">
-                    </div>
-                    ${match.winner ? `<div class="mt-2 text-center text-green-700 font-bold">Current Winner: ${match.winner}</div>` : ''}`;
+                matchDiv.innerHTML = `<div class="flex items-center justify-between font-semibold text-gray-700"><span>${match.team1}</span><span class="px-2">vs.</span><span>${match.team2}</span></div>
+                <div class="flex items-center justify-center mt-2">
+                <input type="number" data-match-id="${bracketType}-${roundIndex}-${matchIndex}" value="${match.score1}" class="bracket-score-input w-16 text-center border rounded p-1 mr-2 no-print" placeholder="0">
+                <span class="font-bold">:</span>
+                <input type="number" data-match-id="${bracketType}-${roundIndex}-${matchIndex}" value="${match.score2}" class="bracket-score-input w-16 text-center border rounded p-1 ml-2 no-print" placeholder="0"></div>
+                ${match.winner ? `<div class="mt-2 text-center text-green-700 font-bold">Current Winner: ${match.winner}</div>` : ''}`;
             }
             return matchDiv;
         }
         
         function checkFinals() {
+            const finalsSection = document.getElementById('finals-section');
             const wbChamp = bracketState.winnersRounds.flat().find(m => m.id === 'W4.1')?.winner;
             const lbChamp = bracketState.losersRounds.flat().find(m => m.id === 'L5.1')?.winner;
 
             if (wbChamp && lbChamp) {
-                document.getElementById('finals-section').classList.remove('hidden');
-                const finalsMatchDiv = document.getElementById('finals-match');
+                finalsSection.classList.remove('hidden');
                 const finalsMatch = { team1: wbChamp, team2: lbChamp, score1: '', score2: '' };
-                finalsMatchDiv.innerHTML = '';
+                finalsSection.innerHTML = `<h3 class="text-xl font-bold text-gray-700 mb-4 text-center">Grand Final</h3><div id="finals-match"></div>`;
+                const finalsMatchDiv = document.getElementById('finals-match');
                 finalsMatchDiv.appendChild(createMatchElement(finalsMatch, 'finals', 0, 0));
                 const btn = document.createElement('button');
-                btn.className = 'mt-4 w-full bg-red-600 text-white font-bold py-2 rounded-lg shadow-md hover:bg-red-700';
+                btn.className = 'mt-4 w-full bg-red-600 text-white font-bold py-2 rounded-lg shadow-md hover:bg-red-700 no-print';
                 btn.textContent = 'Decide Champion';
                 btn.onclick = () => {
                     const inputs = finalsMatchDiv.querySelectorAll('input');
-                    const score1 = parseInt(inputs[0].value);
-                    const score2 = parseInt(inputs[1].value);
-                    if (isNaN(score1) || isNaN(score2)) return showModal("Please enter scores for the final match.");
-                    if (score1 === score2) return showModal("Final match cannot end in a tie.");
-                    const winner = score1 > score2 ? finalsMatch.team1 : finalsMatch.team2;
-                    finalsMatchDiv.innerHTML = `<div class="mt-8 text-center text-4xl font-bold text-yellow-500">🏆 Tournament Champion: ${winner} 🏆</div>`;
+                    const s1 = parseInt(inputs[0].value), s2 = parseInt(inputs[1].value);
+                    if (isNaN(s1) || isNaN(s2)) return showModal("Please enter scores for the final match.");
+                    if (s1 === s2) return showModal("Final match cannot end in a tie.");
+                    const winner = s1 > s2 ? finalsMatch.team1 : finalsMatch.team2;
+                    finalsSection.innerHTML = `<div class="mt-8 text-center text-4xl font-bold text-yellow-500">🏆 Tournament Champion: <span class="champion-name">${winner}</span> 🏆</div>`;
+                    saveState();
                 };
                 finalsMatchDiv.appendChild(btn);
             } else {
-                 document.getElementById('finals-section').classList.add('hidden');
+                finalsSection.classList.add('hidden');
             }
         }
 
-        function showModal(message) {
+        // --- NEW: SVG EXPORT ---
+        function downloadBracketSVG() {
+            if (!bracketState || !bracketState.winnersRounds || bracketState.winnersRounds.length === 0) {
+                showModal("Please generate the bracket before trying to download the image.");
+                return;
+            }
+            const svgContent = generateBracketSVG();
+            const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'pickleball-tournament-bracket.svg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function generateBracketSVG() {
+            const MATCH_WIDTH = 200, MATCH_HEIGHT = 60, ROUND_GAP = 80, VERTICAL_GAP = 30, FONT_SIZE = 14, SCORE_FONT_SIZE = 12, BRACKET_PADDING = 40;
+            const styles = `<style>
+                .match-box { fill: #f9fafb; stroke: #d1d5db; stroke-width: 1; }
+                .team-name { font-family: Inter, sans-serif; font-size: ${FONT_SIZE}px; fill: #111827; }
+                .winner { font-weight: bold; fill: #166534; }
+                .score { font-family: Inter, sans-serif; font-size: ${SCORE_FONT_SIZE}px; fill: #4b5563; font-weight: bold; }
+                .connector { fill: none; stroke: #9ca3af; stroke-width: 1.5px; }
+                .bracket-title { font-family: Inter, sans-serif; font-size: 24px; font-weight: bold; fill: #1f2937; text-anchor: middle; }
+                .tbd { fill: #6b7280; font-style: italic; }
+            </style>`;
+            let svgElements = [styles], matchPositions = new Map(), currentX = BRACKET_PADDING, totalMaxY = 0, finalMaxX = 0;
+
+            const drawBracket = (rounds, title) => {
+                svgElements.push(`<text x="${currentX + (rounds.length * (MATCH_WIDTH + ROUND_GAP)) / 2 - (ROUND_GAP/2)}" y="${BRACKET_PADDING - 10}" class="bracket-title">${title}</text>`);
+                let lastCalculatedY = BRACKET_PADDING * 1.5;
+                rounds.forEach((round, roundIndex) => {
+                    const roundX = currentX + roundIndex * (MATCH_WIDTH + ROUND_GAP);
+                    round.forEach((match, matchIndex) => {
+                        let midY;
+                        const parentIds = [...(match.team1.matchAll(/of (W\d\.\d|L\d\.\d)/g)), ...(match.team2.matchAll(/of (W\d\.\d|L\d\.\d)/g))].map(m => m[1]);
+                        if (parentIds.length > 0) {
+                            const parentPositions = parentIds.map(id => matchPositions.get(id)).filter(p => p);
+                            if (parentPositions.length > 0) midY = parentPositions.reduce((sum, pos) => sum + pos.midY, 0) / parentPositions.length;
+                        }
+                        if (!midY) {
+                            midY = lastCalculatedY + MATCH_HEIGHT / 2 + VERTICAL_GAP;
+                            lastCalculatedY = midY + MATCH_HEIGHT / 2;
+                        }
+                        const matchY = midY - MATCH_HEIGHT / 2;
+                        const winnerIsTeam1 = match.winner === match.team1 && match.winner !== null, winnerIsTeam2 = match.winner === match.team2 && match.winner !== null;
+                        
+                        svgElements.push(`<g id="match-${match.id}">
+                            <rect x="${roundX}" y="${matchY}" width="${MATCH_WIDTH}" height="${MATCH_HEIGHT}" rx="3" class="match-box" />
+                            <text x="${roundX + 10}" y="${matchY + 20}" class="team-name ${winnerIsTeam1 ? 'winner' : ''} ${match.team1.includes(" of ") ? 'tbd' : ''}">${match.team1.replace('BYE','(BYE)')}</text>
+                            <text x="${roundX + MATCH_WIDTH - 15}" y="${matchY + 20}" text-anchor="end" class="score ${winnerIsTeam1 ? 'winner' : ''}">${match.score1}</text>
+                            <line x1="${roundX}" y1="${matchY + MATCH_HEIGHT/2}" x2="${roundX + MATCH_WIDTH}" y2="${matchY + MATCH_HEIGHT/2}" stroke="#d1d5db" />
+                            <text x="${roundX + 10}" y="${matchY + MATCH_HEIGHT - 15}" class="team-name ${winnerIsTeam2 ? 'winner' : ''} ${match.team2.includes(" of ") ? 'tbd' : ''}">${match.team2.replace('BYE','(BYE)')}</text>
+                            <text x="${roundX + MATCH_WIDTH - 15}" y="${matchY + MATCH_HEIGHT - 15}" text-anchor="end" class="score ${winnerIsTeam2 ? 'winner' : ''}">${match.score2}</text>
+                        </g>`);
+                        
+                        if (matchY + MATCH_HEIGHT > totalMaxY) totalMaxY = matchY + MATCH_HEIGHT;
+                        const endX = roundX + MATCH_WIDTH;
+                        matchPositions.set(match.id, { midY, endX });
+                        parentIds.forEach(pId => {
+                            if (matchPositions.has(pId)) {
+                                const parentPos = matchPositions.get(pId);
+                                const connectorMidX = parentPos.endX + ROUND_GAP / 2;
+                                svgElements.push(`<path d="M ${parentPos.endX} ${parentPos.midY} H ${connectorMidX} V ${midY} H ${roundX}" class="connector" />`);
+                            }
+                        });
+                    });
+                });
+                currentX += rounds.length * (MATCH_WIDTH + ROUND_GAP) + ROUND_GAP;
+            };
+            drawBracket(bracketState.winnersRounds, 'Winners Bracket');
+            const winnersMaxY = totalMaxY;
+            totalMaxY = 0; // Reset Y calculation for Losers Bracket
+            drawBracket(bracketState.losersRounds, 'Losers Bracket');
+            totalMaxY = Math.max(winnersMaxY, totalMaxY);
+
+            const wbChampMatch = bracketState.winnersRounds.flat().find(m => m.id === 'W4.1'), lbChampMatch = bracketState.losersRounds.flat().find(m => m.id === 'L5.1');
+            if (wbChampMatch?.winner && lbChampMatch?.winner) {
+                const wbPos = matchPositions.get('W4.1'), lbPos = matchPositions.get('L5.1');
+                const finalMidY = (wbPos.midY + lbPos.midY) / 2, finalY = finalMidY - MATCH_HEIGHT / 2, finalX = Math.max(wbPos.endX, lbPos.endX) + ROUND_GAP;
+                const finalWinner = document.querySelector('.champion-name')?.textContent || '', inputs = document.querySelectorAll('#finals-match input');
+                const score1 = inputs.length > 0 ? inputs[0].value : '', score2 = inputs.length > 1 ? inputs[1].value : '';
+                const winnerIsWb = finalWinner && finalWinner === wbChampMatch.winner, winnerIsLb = finalWinner && finalWinner === lbChampMatch.winner;
+                svgElements.push(`<text x="${finalX + MATCH_WIDTH/2}" y="${BRACKET_PADDING - 10}" class="bracket-title">Grand Final</text>
+                    <g id="match-final">
+                        <rect x="${finalX}" y="${finalY}" width="${MATCH_WIDTH}" height="${MATCH_HEIGHT}" rx="3" class="match-box" />
+                        <text x="${finalX + 10}" y="${finalY + 20}" class="team-name ${winnerIsWb ? 'winner' : ''}">${wbChampMatch.winner}</text>
+                        <text x="${finalX + MATCH_WIDTH - 15}" y="${finalY + 20}" text-anchor="end" class="score ${winnerIsWb ? 'winner' : ''}">${score1}</text>
+                        <line x1="${finalX}" y1="${finalY + MATCH_HEIGHT/2}" x2="${finalX + MATCH_WIDTH}" y2="${finalY + MATCH_HEIGHT/2}" stroke="#d1d5db" />
+                        <text x="${finalX + 10}" y="${finalY + MATCH_HEIGHT - 15}" class="team-name ${winnerIsLb ? 'winner' : ''}">${lbChampMatch.winner}</text>
+                        <text x="${finalX + MATCH_WIDTH - 15}" y="${finalY + MATCH_HEIGHT - 15}" text-anchor="end" class="score ${winnerIsLb ? 'winner' : ''}">${score2}</text>
+                    </g>
+                    <path d="M ${wbPos.endX} ${wbPos.midY} H ${wbPos.endX + ROUND_GAP/2} V ${finalMidY} H ${finalX}" class="connector" />
+                    <path d="M ${lbPos.endX} ${lbPos.midY} H ${lbPos.endX + ROUND_GAP/2} V ${finalMidY} H ${finalX}" class="connector" />`);
+                finalMaxX = finalX + MATCH_WIDTH;
+                if (finalY + MATCH_HEIGHT > totalMaxY) totalMaxY = finalY + MATCH_HEIGHT;
+            } else {
+                finalMaxX = currentX - ROUND_GAP;
+            }
+            return `<svg width="${finalMaxX + BRACKET_PADDING}" height="${totalMaxY + BRACKET_PADDING}" xmlns="http://www.w3.org/2000/svg">${svgElements.join('\n')}</svg>`;
+        }
+
+        function showModal(content, isRawHtml = false) {
             let modal = document.getElementById('custom-modal');
             if (modal) modal.remove();
             modal = document.createElement('div');
             modal.id = 'custom-modal';
-            modal.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4';
-            modal.innerHTML = `
-                <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
-                    <p class="text-lg font-semibold mb-4">${message}</p>
+            modal.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4 no-print';
+            if (isRawHtml) {
+                modal.innerHTML = content;
+            } else {
+                modal.innerHTML = `<div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
+                    <p class="text-lg font-semibold mb-4">${content}</p>
                     <button onclick="document.getElementById('custom-modal').remove()" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700">OK</button>
                 </div>`;
+            }
             document.body.appendChild(modal);
         }
 
-        window.onload = function() {
-            document.getElementById('team-names').value = `Team Alpha\nTeam Bravo\nTeam Charlie\nTeam Delta\nTeam Echo\nTeam Foxtrot\nTeam Golf\nTeam Hotel\nTeam India\nTeam Juliet`;
-        }
+        // --- NEW: Event listener for collapsible menu ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuToggle = document.getElementById('menu-toggle');
+            const menuDropdown = document.getElementById('menu-dropdown');
+
+            if(menuToggle && menuDropdown) {
+                menuToggle.addEventListener('click', (event) => {
+                    event.stopPropagation(); // Prevent the window click listener from firing immediately
+                    menuDropdown.classList.toggle('hidden');
+                });
+                window.addEventListener('click', (event) => {
+                    if (!menuDropdown.classList.contains('hidden') && !menuToggle.contains(event.target)) {
+                        menuDropdown.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
     </script>
 </body>
 </html>
